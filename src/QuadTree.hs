@@ -102,7 +102,26 @@ initQuadTree = QuadTree ((-w, -h), (w, h)) Empty
 
 -- | Отобразить демо.
 drawDemo :: Demo -> Picture
-drawDemo demo = pictures (map drawPoint (toList (quadTree demo)))
+drawDemo demo = pictures 
+  [ pictures (map drawPoint (toList (quadTree demo)))
+  , drawQuadrants (quadTree demo) ]
+
+-- | Отобразить разбиение пространства на квадранты.
+drawQuadrants :: QuadTree a -> Picture
+drawQuadrants (QuadTree rect q) = pictures
+  [ drawRect rect
+  , drawQuadrant q ]
+
+-- | Отобразить границы квадранта.
+drawRect :: Rect -> Picture
+drawRect ((l, b), (r, t)) = color orange (line
+  [(l, b), (l, t), (r, t), (r, b), (l, b)])
+
+-- | Отобразить разбиение квадранта.
+drawQuadrant :: Quadrant a -> Picture
+drawQuadrant Empty = blank
+drawQuadrant (Bucket _ _) = blank
+drawQuadrant (Split (Quad a b c d)) = pictures (map drawQuadrants [a, b, c, d])
 
 -- | Отобразить одну точку.
 drawPoint :: Point -> Picture
