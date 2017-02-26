@@ -38,7 +38,8 @@ data QuadTree a = QuadTree Rect (Quadrant a)
 insert :: a -> Point -> QuadTree a -> QuadTree a
 insert x p (QuadTree rect Empty) = QuadTree rect (Bucket x p)
 insert x p (QuadTree rect (Bucket y q))
-  = insert x p (insert y q (QuadTree rect (Split (splitRect rect))))
+  | p == q    = QuadTree rect (Bucket x p)
+  | otherwise = insert x p (insert y q (QuadTree rect (Split (splitRect rect))))
 insert x p (QuadTree rect (Split (Quad lb lt rt rb)))
   = QuadTree rect (Split quad)
   where
@@ -46,7 +47,7 @@ insert x p (QuadTree rect (Split (Quad lb lt rt rb)))
       | leftBottom = Quad (f lb) lt rt rb
       | leftTop    = Quad lb (f lt) rt rb
       | rightTop   = Quad lb lt (f rt) rb
-      | otherwise  = Quad lb lt rt rb
+      | otherwise  = Quad lb lt rt (f rb)
 
     f = insert x p
     leftBottom = left  p rect && bottom p rect
@@ -109,7 +110,12 @@ drawPoint (x, y) = color white (translate x y (circle 3))
 
 -- | Обработка событий.
 handleDemo :: Event -> Demo -> Demo
+handleDemo (EventKey (MouseButton LeftButton) _ _ mouse) = addPoint mouse
 handleDemo _ = id
+
+-- | Добавить объект в заданной точке.
+addPoint :: Point -> Demo -> Demo
+addPoint p demo = demo { quadTree = insert p p (quadTree demo) }
 
 -- | Обновление визуализации.
 -- Все изменения в этой демонстрационной программе происходят
