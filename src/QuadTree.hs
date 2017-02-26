@@ -13,6 +13,7 @@ runQuadTreeDemo = do
 
 -- | Состояние визуализации.
 data Demo = Demo
+  { quadTree :: QuadTree Point }
 
 -- | Прямоугольная область, заданная левой нижней
 -- и правым верхней вершинами.
@@ -20,15 +21,18 @@ type Rect = (Point, Point)
 
 -- | Вектор длины четыре.
 data Quad a = Quad a a a a
+  deriving (Show)
 
 -- | Квадрант.
 data Quadrant a
   = Empty                     -- ^ Пустой квадрант.
   | Bucket a Point            -- ^ Квадрант, содержащий один объект.
   | Split (Quad (QuadTree a)) -- ^ Квадрант, разбитый на четыре подквадранта.
+  deriving (Show)
 
 -- | Дерево квадрантов.
 data QuadTree a = QuadTree Rect (Quadrant a)
+  deriving (Show)
 
 -- | Вставить новый объект в дерево квадрантов.
 insert :: a -> Point -> QuadTree a -> QuadTree a
@@ -76,13 +80,32 @@ bottom (_, y) ((_, b), (_, t)) = y < (b + t) / 2
 top :: Point -> Rect -> Bool
 top p = not . bottom p
 
+-- | Получить список всех объектов в дереве квадрантов.
+toList :: QuadTree a -> [a]
+toList (QuadTree _ Empty) = []
+toList (QuadTree _ (Bucket x _)) = [x]
+toList (QuadTree _ (Split (Quad a b c d)))
+  = toList a ++ toList b ++ toList c ++ toList d
+
 -- | Инициализировать демо.
 initDemo :: Demo
 initDemo = Demo
+  { quadTree = initQuadTree }
+
+-- | Инициализировать начальное дерево квадрантов.
+initQuadTree :: QuadTree Point
+initQuadTree = QuadTree ((-w, -h), (w, h)) Empty
+  where
+    w = fromIntegral screenWidth / 2
+    h = fromIntegral screenHeight / 2
 
 -- | Отобразить демо.
 drawDemo :: Demo -> Picture
-drawDemo _ = blank
+drawDemo demo = pictures (map drawPoint (toList (quadTree demo)))
+
+-- | Отобразить одну точку.
+drawPoint :: Point -> Picture
+drawPoint (x, y) = color white (translate x y (circle 3))
 
 -- | Обработка событий.
 handleDemo :: Event -> Demo -> Demo
