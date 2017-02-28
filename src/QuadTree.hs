@@ -11,6 +11,10 @@ runQuadTreeDemo = do
     bgColor = black   -- цвет фона
     fps     = 60      -- кол-во кадров в секунду
 
+-- =========================================
+-- Основные типы и функции
+-- =========================================
+
 -- | Состояние визуализации.
 data Demo = Demo
   { quadTree      :: QuadTree Point   -- ^ Объекты, организованные в дереве квадрантов.
@@ -114,6 +118,10 @@ initQuadTree = QuadTree ((-w, -h), (w, h)) Empty
     w = fromIntegral screenWidth / 2
     h = fromIntegral screenHeight / 2
 
+-- =========================================
+-- Отображение
+-- =========================================
+
 -- | Отобразить демо.
 drawDemo :: Demo -> Picture
 drawDemo demo = pictures
@@ -158,6 +166,10 @@ drawPoint (x, y) = color white (translate x y (circle 3))
 drawSelectedPoint :: Point -> Picture
 drawSelectedPoint (x, y) = color white (translate x y (thickCircle 1.5 3))
 
+-- =========================================
+-- Обработка событий
+-- =========================================
+
 -- | Обработка событий.
 handleDemo :: Event -> Demo -> Demo
 handleDemo (EventKey (MouseButton LeftButton) Down _ mouse) = startArea mouse
@@ -197,6 +209,10 @@ adjustArea mouse demo = demo { selectedArea = newArea }
 -- по событиям, поэтому эта функция ничего не делает.
 updateDemo :: Float -> Demo -> Demo
 updateDemo _ = id
+
+-- =========================================
+-- Параметры визуализации
+-- =========================================
 
 -- | Ширина экрана в пикселях.
 screenWidth :: Int
