@@ -13,7 +13,9 @@ runQuadTreeDemo = do
 
 -- | Состояние визуализации.
 data Demo = Demo
-  { quadTree :: QuadTree Point }
+  { quadTree      :: QuadTree Point   -- ^ Объекты, организованные в дереве квадрантов.
+  , selectedArea  :: Maybe Rect       -- ^ Область, выделенная при помощи мыши.
+  }
 
 -- | Прямоугольная область, заданная левой нижней
 -- и правым верхней вершинами.
@@ -91,7 +93,9 @@ toList (QuadTree _ (Split (Quad a b c d)))
 -- | Инициализировать демо.
 initDemo :: Demo
 initDemo = Demo
-  { quadTree = initQuadTree }
+  { quadTree = initQuadTree
+  , selectedArea = Nothing
+  }
 
 -- | Инициализировать начальное дерево квадрантов.
 initQuadTree :: QuadTree Point
@@ -102,9 +106,11 @@ initQuadTree = QuadTree ((-w, -h), (w, h)) Empty
 
 -- | Отобразить демо.
 drawDemo :: Demo -> Picture
-drawDemo demo = pictures 
-  [ pictures (map drawPoint (toList (quadTree demo)))
-  , drawQuadrants (quadTree demo) ]
+drawDemo demo = pictures
+  [ drawQuadrants (quadTree demo)
+  , drawSelectedArea (selectedArea demo)
+  , pictures (map drawPoint (toList (quadTree demo)))
+  ]
 
 -- | Отобразить разбиение пространства на квадранты.
 drawQuadrants :: QuadTree a -> Picture
@@ -116,6 +122,12 @@ drawQuadrants (QuadTree rect q) = pictures
 drawRect :: Rect -> Picture
 drawRect ((l, b), (r, t)) = color orange (line
   [(l, b), (l, t), (r, t), (r, b), (l, b)])
+
+-- | Отобразить выделение.
+drawSelectedArea :: Maybe Rect -> Picture
+drawSelectedArea Nothing = blank
+drawSelectedArea (Just ((x1, y1), (x2, y2)))
+  = color (withAlpha 0.5 orange) (polygon [(x1, y1), (x1, y2), (x2, y2), (x2, y1)])
 
 -- | Отобразить разбиение квадранта.
 drawQuadrant :: Quadrant a -> Picture
@@ -129,12 +141,37 @@ drawPoint (x, y) = color white (translate x y (circle 3))
 
 -- | Обработка событий.
 handleDemo :: Event -> Demo -> Demo
-handleDemo (EventKey (MouseButton LeftButton) _ _ mouse) = addPoint mouse
+handleDemo (EventKey (MouseButton LeftButton) Down _ mouse) = startArea mouse
+handleDemo (EventKey (MouseButton LeftButton) Up   _ mouse) = addPointOrResetArea mouse
+handleDemo (EventMotion mouse) = adjustArea mouse
 handleDemo _ = id
+
+-- | Добавить точку, если выделения нет.
+-- В противном случае — сбросить выделение.
+addPointOrResetArea :: Point -> Demo -> Demo
+addPointOrResetArea mouse demo
+  | emptyArea = addPoint mouse demo { selectedArea = Nothing }
+  | otherwise = demo { selectedArea = Nothing }
+  where
+    emptyArea = case selectedArea demo of
+      Nothing -> True
+      Just (start, end) -> start == end
 
 -- | Добавить объект в заданной точке.
 addPoint :: Point -> Demo -> Demo
 addPoint p demo = demo { quadTree = insert p p (quadTree demo) }
+
+-- | Начать новое выделение.
+startArea :: Point -> Demo -> Demo
+startArea mouse demo = demo { selectedArea = Just (mouse, mouse) }
+
+-- | Изменить выделение.
+adjustArea :: Point -> Demo -> Demo
+adjustArea mouse demo = demo { selectedArea = newArea }
+  where
+    newArea = case selectedArea demo of
+      Nothing -> Nothing
+      Just (start, _) -> Just (start, mouse)
 
 -- | Обновление визуализации.
 -- Все изменения в этой демонстрационной программе происходят
