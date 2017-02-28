@@ -90,6 +90,16 @@ toList (QuadTree _ (Bucket x _)) = [x]
 toList (QuadTree _ (Split (Quad a b c d)))
   = toList a ++ toList b ++ toList c ++ toList d
 
+-- | Выбрать объекты в заданной прямоугольной области.
+getRange :: Rect -> QuadTree a -> [a]
+getRange _ _ = [] -- реализуйте эту функцию самостоятельно
+
+-- | Привести прямоугольник к стандартному представлению,
+-- то есть к паре вершин <левая нижняя, правая верхняя>.
+normaliseRect :: Rect -> Rect
+normaliseRect ((x1, y1), (x2, y2))
+  = ((min x1 x2, min y1 y2), (max x1 x2, max y1 y2))
+
 -- | Инициализировать демо.
 initDemo :: Demo
 initDemo = Demo
@@ -110,7 +120,12 @@ drawDemo demo = pictures
   [ drawQuadrants (quadTree demo)
   , drawSelectedArea (selectedArea demo)
   , pictures (map drawPoint (toList (quadTree demo)))
+  , pictures (map drawSelectedPoint selectedPoints)
   ]
+  where
+    selectedPoints = case selectedArea demo of
+      Nothing -> []
+      Just area -> getRange (normaliseRect area) (quadTree demo)
 
 -- | Отобразить разбиение пространства на квадранты.
 drawQuadrants :: QuadTree a -> Picture
@@ -138,6 +153,10 @@ drawQuadrant (Split (Quad a b c d)) = pictures (map drawQuadrants [a, b, c, d])
 -- | Отобразить одну точку.
 drawPoint :: Point -> Picture
 drawPoint (x, y) = color white (translate x y (circle 3))
+
+-- | Отобразить одну выделенную точку.
+drawSelectedPoint :: Point -> Picture
+drawSelectedPoint (x, y) = color white (translate x y (thickCircle 1.5 3))
 
 -- | Обработка событий.
 handleDemo :: Event -> Demo -> Demo
